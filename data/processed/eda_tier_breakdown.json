@@ -1,0 +1,32 @@
+[
+  {
+    "Subscription_Tier": "Basic",
+    "count": 3416,
+    "avg_conversion_rate": 0.6115,
+    "avg_roi": 2.7908,
+    "avg_revenue": 50157.9182,
+    "avg_activation_score": 23.2702,
+    "avg_satisfaction": 2.5018,
+    "avg_subscription_length": 18.0946
+  },
+  {
+    "Subscription_Tier": "Standard",
+    "count": 3300,
+    "avg_conversion_rate": 0.6154,
+    "avg_roi": 2.7376,
+    "avg_revenue": 49860.8958,
+    "avg_activation_score": 23.0478,
+    "avg_satisfaction": 2.5242,
+    "avg_subscription_length": 17.9155
+  },
+  {
+    "Subscription_Tier": "Premium",
+    "count": 3284,
+    "avg_conversion_rate": 0.6022,
+    "avg_roi": 2.7394,
+    "avg_revenue": 50093.1398,
+    "avg_activation_score": 22.7888,
+    "avg_satisfaction": 2.4766,
+    "avg_subscription_length": 18.0368
+  }
+]
