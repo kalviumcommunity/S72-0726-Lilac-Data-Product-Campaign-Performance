@@ -91,6 +91,9 @@ def run(df: pd.DataFrame = None) -> dict:
     with open(PROCESSED_DIR / "ml_classification_report.json", "w") as f:
         json.dump(report, f, indent=2)
         
+    with open(PROCESSED_DIR / "ml_activation_metrics.json", "w") as f:
+        json.dump(metrics, f, indent=2)
+        
     print(f"[activation_classifier] Metrics: {metrics}")
     return metrics
 

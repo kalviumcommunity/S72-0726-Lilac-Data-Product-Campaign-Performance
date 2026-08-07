@@ -81,6 +81,9 @@ def run(df: pd.DataFrame = None) -> dict:
     with open(PROCESSED_DIR / "ml_conversion_predictions.json", "w") as f:
         json.dump(predictions, f, indent=2)
         
+    with open(PROCESSED_DIR / "ml_conversion_metrics.json", "w") as f:
+        json.dump(metrics, f, indent=2)
+        
     print(f"[conversion_predictor] Metrics: {metrics}")
     return metrics
 
