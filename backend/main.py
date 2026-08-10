@@ -3,7 +3,7 @@ main.py - FastAPI entrypoint
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import data_routes
+from app.api import data_routes, ml_routes
 
 app = FastAPI(
     title="Campaign Performance Intelligence API",
@@ -20,6 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(data_routes.router, prefix="/api", tags=["Data & EDA"])
+app.include_router(ml_routes.router, prefix="/api", tags=["ML Models"])
 
 @app.get("/")
 def read_root():
