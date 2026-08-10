@@ -48,3 +48,4 @@ backend/models/*.h5
 # Environment variables
 .env
 .env.local
+.gitnexus
