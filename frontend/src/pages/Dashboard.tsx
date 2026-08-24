@@ -1,12 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart3, Key, Lightbulb, Star } from 'lucide-react';
-import { CampaignRow, KPI, ChartDataPoint } from '../types';
-import { loadData } from '../services/dataLoader';
-import {
-  computeKPIs, roiHistogram, budgetVsRevenue,
-  conversionsByTier, topKeywords, discountVsUnits,
-  satisfactionDistribution,
-} from '../services/dataProcessor';
+import { KPI, ChartDataPoint } from '../types';
+import { api } from '../services/api';
 
 import KPICards from '../components/KPICards';
 import ROIHistogram from '../components/ROIHistogram';
@@ -17,35 +12,103 @@ import DiscountVsUnits from '../components/DiscountVsUnits';
 import SatisfactionDonut from '../components/SatisfactionDonut';
 
 export default function Dashboard() {
-  const [data, setData] = useState<CampaignRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tierFilter, setTierFilter] = useState<string>('All');
+  const [error, setError] = useState<string | null>(null);
+
+  const [kpis, setKpis] = useState<KPI[]>([]);
+  const [roi, setRoi] = useState<{ data: ChartDataPoint[]; median: number }>({ data: [], median: 0 });
+  const [scatter, setScatter] = useState<ChartDataPoint[]>([]);
+  const [tierConv, setTierConv] = useState<ChartDataPoint[]>([]);
+  const [keywords, setKeywords] = useState<ChartDataPoint[]>([]);
+  const [discount, setDiscount] = useState<ChartDataPoint[]>([]);
+  const [satisfaction, setSatisfaction] = useState<ChartDataPoint[]>([]);
+
+  const fmt = (n: number, dec = 1): string =>
+    n >= 1_000_000 ? (n / 1_000_000).toFixed(dec) + 'M'
+    : n >= 1_000 ? (n / 1_000).toFixed(dec) + 'K'
+    : n.toFixed(dec);
 
   useEffect(() => {
-    loadData().then((rows) => {
-      setData(rows);
-      setLoading(false);
-    });
+    async function loadDashboardData() {
+      try {
+        setLoading(true);
+        const [
+          summary,
+          distributions,
+          keywordData,
+          tierData,
+          scatterData,
+          discountData,
+          satisfactionData
+        ] = await Promise.all([
+          api.getEdaSummary(),
+          api.getEdaDistributions(),
+          api.getEdaKeywordPerformance(),
+          api.getEdaTierBreakdown(),
+          api.getEdaBudgetScatter(),
+          api.getEdaDiscountVsUnits(),
+          api.getEdaSatisfactionDistribution()
+        ]);
+
+        // Map KPIs
+        setKpis([
+          { label: 'Total Revenue',     value: '$' + fmt(summary.total_revenue),      icon: 'revenue', glow: 'stat-glow-purple', color: '#7c4dff' },
+          { label: 'Total Budget',      value: '$' + fmt(summary.total_budget),       icon: 'budget',  glow: 'stat-glow-cyan',   color: '#00e5ff' },
+          { label: 'Average ROI',       value: summary.avg_roi.toFixed(2) + 'x',      icon: 'roi',     glow: 'stat-glow-green',  color: '#76ff03' },
+          { label: 'Total Conversions', value: fmt(summary.total_conversions, 0),     icon: 'conversions', glow: 'stat-glow-pink',   color: '#ff4081' },
+          { label: 'Avg Satisfaction',  value: summary.avg_satisfaction.toFixed(2) + ' / 5',   icon: 'satisfaction', glow: 'stat-glow-orange', color: '#ffab40' },
+        ]);
+
+        // Map ROI Histogram
+        const roiDist = distributions.ROI;
+        const roiHistogramData = roiDist.counts.map((count: number, i: number) => ({
+          bin: +((roiDist.bin_edges[i] + roiDist.bin_edges[i+1]) / 2).toFixed(2),
+          label: `${roiDist.bin_edges[i].toFixed(1)} – ${roiDist.bin_edges[i+1].toFixed(1)}`,
+          count,
+        }));
+        setRoi({ data: roiHistogramData, median: roiDist.median });
+
+        // Map Budget Scatter
+        setScatter(scatterData.map((d: any) => ({
+          budget: +d.budget.toFixed(0),
+          revenue: +d.revenue.toFixed(0),
+          roi: +d.roi.toFixed(2),
+          tier: d.tier
+        })));
+
+        // Map Conversions by Tier
+        setTierConv(tierData.map((d: any) => ({
+          tier: d.Subscription_Tier,
+          avg: +(d.avg_conversion_rate * d.count).toFixed(0), // approx total conversions / count = avg conversions
+          count: d.count
+        })).sort((a: any, b: any) => a.tier.localeCompare(b.tier)));
+
+        // Map Top Keywords
+        setKeywords(keywordData.slice(0, 10).map((d: any) => ({
+          keyword: d.Common_Keywords,
+          count: d.campaign_count
+        })));
+
+        // Map Discount vs Units
+        setDiscount(discountData);
+
+        // Map Satisfaction Donut
+        const colors = ['#7c4dff', '#00e5ff', '#76ff03', '#ff4081', '#ffab40'];
+        setSatisfaction(satisfactionData.map((d: any, i: number) => ({
+          name: `Score ${d.score}`,
+          value: d.count,
+          fill: colors[i % colors.length],
+        })));
+
+        setLoading(false);
+      } catch (err: any) {
+        setError(err.message);
+        setLoading(false);
+      }
+    }
+
+    loadDashboardData();
   }, []);
-
-  const filtered = useMemo(() => {
-    if (tierFilter === 'All') return data;
-    return data.filter(r => r.Subscription_Tier === tierFilter);
-  }, [data, tierFilter]);
-
-  const tiers = useMemo(() => {
-    const set = new Set(data.map(r => r.Subscription_Tier));
-    return ['All', ...Array.from(set).sort()];
-  }, [data]);
-
-  // Compute chart data
-  const kpis: KPI[] = useMemo(() => computeKPIs(filtered), [filtered]);
-  const roi = useMemo(() => roiHistogram(filtered), [filtered]);
-  const scatter = useMemo(() => budgetVsRevenue(filtered), [filtered]);
-  const tierConv: ChartDataPoint[] = useMemo(() => conversionsByTier(filtered), [filtered]);
-  const keywords: ChartDataPoint[] = useMemo(() => topKeywords(filtered), [filtered]);
-  const discount: ChartDataPoint[] = useMemo(() => discountVsUnits(filtered), [filtered]);
-  const satisfaction: ChartDataPoint[] = useMemo(() => satisfactionDistribution(filtered), [filtered]);
 
   if (loading) {
     return (
@@ -58,6 +121,10 @@ export default function Dashboard() {
     );
   }
 
+  if (error) {
+    return <div className="p-6 text-red-400">Error: {error}</div>;
+  }
+
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-8 max-w-[1600px] mx-auto">
       {/* Header */}
@@ -68,21 +135,8 @@ export default function Dashboard() {
               Campaign Performance Dashboard
             </h1>
             <p className="text-gray-400 mt-1 text-sm">
-              {data.length.toLocaleString()} campaigns · Interactive analytics powered by Recharts
+              10,000 campaigns · Full-Stack Data Pipeline
             </p>
-          </div>
-
-          {/* Tier filter */}
-          <div className="flex flex-wrap gap-2">
-            {tiers.map(t => (
-              <button
-                key={t}
-                className={`filter-pill ${tierFilter === t ? 'active' : ''}`}
-                onClick={() => setTierFilter(t)}
-              >
-                {t}
-              </button>
-            ))}
           </div>
         </div>
       </header>
@@ -122,7 +176,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-medium text-white mb-1">ROI Performance</p>
-                <p>Median ROI sits at <span className="text-purple-400 font-semibold">{roi.median.toFixed(2)}x</span> across {tierFilter === 'All' ? 'all tiers' : tierFilter + ' tier'}. Distribution shows a roughly uniform spread indicating varied campaign effectiveness.</p>
+                <p>Median ROI sits at <span className="text-purple-400 font-semibold">{roi.median.toFixed(2)}x</span> across all tiers. Distribution shows a roughly uniform spread indicating varied campaign effectiveness.</p>
               </div>
             </div>
             <div className="flex gap-4 p-3 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10 group cursor-default">

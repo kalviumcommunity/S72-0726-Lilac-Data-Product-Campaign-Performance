@@ -1,6 +1,6 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ErrorBar,
+  Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { ChartDataPoint } from '../types';
 
@@ -44,29 +44,17 @@ export default function ConversionsByTier({ data }: Props) {
               return (
                 <div className="glass-card p-3 text-sm border border-pink-500/20">
                   <div className="font-semibold mb-1" style={{ color: TIER_COLORS[d.tier] }}>{d.tier}</div>
-                  <div className="text-gray-400">Median: <span className="text-white">{d.median}</span></div>
-                  <div className="text-gray-400">Q1: {d.q1} · Q3: {d.q3}</div>
-                  <div className="text-gray-400">Range: {d.min} – {d.max}</div>
+                  <div className="text-gray-400">Avg Conversions: <span className="text-white">{d.avg}</span></div>
                   <div className="text-gray-400">Count: {d.count} campaigns</div>
                 </div>
               );
             }}
           />
-          <Bar dataKey="median" radius={[6, 6, 0, 0]} maxBarSize={60}>
+          <Bar dataKey="avg" radius={[6, 6, 0, 0]} maxBarSize={60}>
             {data.map((d) => {
               const tier = d.tier as string;
               return (
                 <rect key={tier} fill={TIER_COLORS[tier] || '#7c4dff'} fillOpacity={0.8} />
-              );
-            })}
-            <ErrorBar dataKey="q3" width={4} strokeWidth={1.5} stroke="#e0e0f0" direction="y" />
-          </Bar>
-          {/* Overlay bar for Q1–Q3 range visualization */}
-          <Bar dataKey="avg" radius={[6, 6, 0, 0]} maxBarSize={60} fillOpacity={0}>
-            {data.map((d) => {
-              const tier = d.tier as string;
-              return (
-                <rect key={tier} fill="transparent" stroke={TIER_COLORS[tier] || '#7c4dff'} strokeWidth={1.5} strokeDasharray="4 3" />
               );
             })}
           </Bar>
@@ -76,7 +64,7 @@ export default function ConversionsByTier({ data }: Props) {
         {data.map(d => (
           <span key={d.tier as string} className="flex items-center gap-1.5 text-xs text-gray-400">
             <span className="w-2.5 h-2.5 rounded-full" style={{ background: TIER_COLORS[d.tier as string] }} />
-            {d.tier as string}: median {d.median as number}
+            {d.tier as string}: avg {d.avg as number}
           </span>
         ))}
       </div>

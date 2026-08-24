@@ -42,6 +42,18 @@ def get_keyword_performance():
 def get_tier_breakdown():
     return _load_json("eda_tier_breakdown.json")
 
+@router.get("/eda/budget-scatter")
+def get_budget_scatter():
+    return _load_json("eda_budget_scatter.json")
+
+@router.get("/eda/discount-vs-units")
+def get_discount_vs_units():
+    return _load_json("eda_discount_vs_units.json")
+
+@router.get("/eda/satisfaction-distribution")
+def get_satisfaction_distribution():
+    return _load_json("eda_satisfaction_distribution.json")
+
 @router.get("/data/features")
 def get_features(limit: int = 100, offset: int = 0):
     path = PROCESSED_DIR / "features.parquet"
