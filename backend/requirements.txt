@@ -3,7 +3,7 @@ uvicorn[standard]
 pandas
 numpy
 scikit-learn
-xgboost
+xgboost==2.0.3
 matplotlib
 seaborn
 plotly
@@ -13,3 +13,5 @@ python-multipart
 httpx
 python-dotenv
 pyarrow
+pytest
+pytest-asyncio

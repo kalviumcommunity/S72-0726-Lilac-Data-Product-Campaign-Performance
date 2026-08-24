@@ -1,6 +1,6 @@
 import { CampaignPredictRequest, CampaignPredictResponse, ModelMetrics, ClusterProfile } from '../types';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = '/api';
 
 export const api = {
   async predict(payload: CampaignPredictRequest): Promise<CampaignPredictResponse> {
@@ -58,6 +58,48 @@ export const api = {
   async getRevenueImportance(): Promise<Record<string, number>> {
     const res = await fetch(`${API_BASE}/ml/revenue/importance`);
     if (!res.ok) throw new Error('Failed to fetch revenue importance');
+    return res.json();
+  },
+
+  async getEdaSummary(): Promise<any> {
+    const res = await fetch(`${API_BASE}/eda/summary`);
+    if (!res.ok) throw new Error('Failed to fetch EDA summary');
+    return res.json();
+  },
+
+  async getEdaDistributions(): Promise<any> {
+    const res = await fetch(`${API_BASE}/eda/distributions`);
+    if (!res.ok) throw new Error('Failed to fetch EDA distributions');
+    return res.json();
+  },
+
+  async getEdaKeywordPerformance(): Promise<any> {
+    const res = await fetch(`${API_BASE}/eda/keyword-performance`);
+    if (!res.ok) throw new Error('Failed to fetch EDA keyword performance');
+    return res.json();
+  },
+
+  async getEdaTierBreakdown(): Promise<any> {
+    const res = await fetch(`${API_BASE}/eda/tier-breakdown`);
+    if (!res.ok) throw new Error('Failed to fetch EDA tier breakdown');
+    return res.json();
+  },
+
+  async getEdaBudgetScatter(): Promise<any> {
+    const res = await fetch(`${API_BASE}/eda/budget-scatter`);
+    if (!res.ok) throw new Error('Failed to fetch EDA budget scatter');
+    return res.json();
+  },
+
+  async getEdaDiscountVsUnits(): Promise<any> {
+    const res = await fetch(`${API_BASE}/eda/discount-vs-units`);
+    if (!res.ok) throw new Error('Failed to fetch EDA discount vs units');
+    return res.json();
+  },
+
+  async getEdaSatisfactionDistribution(): Promise<any> {
+    const res = await fetch(`${API_BASE}/eda/satisfaction-distribution`);
+    if (!res.ok) throw new Error('Failed to fetch EDA satisfaction distribution');
     return res.json();
   }
 };

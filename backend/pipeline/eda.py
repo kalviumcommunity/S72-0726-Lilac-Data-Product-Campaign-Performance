@@ -36,9 +36,12 @@ def generate_summary(df: pd.DataFrame) -> dict:
         "total_rows": len(df),
         "total_campaigns": df["Campaign_ID"].nunique(),
         "total_revenue": round(float(df["Revenue_Generated"].sum()), 2),
+        "total_budget": round(float(df["Budget"].sum()), 2),
+        "total_conversions": int(df["Conversions"].sum()),
         "avg_roi": round(float(df["ROI"].mean()), 4),
         "avg_conversion_rate": round(float(df["conversion_rate"].mean()), 4),
         "avg_activation_score": round(float(df["activation_score"].mean()), 2),
+        "avg_satisfaction": round(float(df["Customer_Satisfaction_Post_Refund"].mean()), 4),
         "vanity_traffic_count": int(df["vanity_traffic_flag"].sum()),
         "vanity_traffic_pct": round(df["vanity_traffic_flag"].mean() * 100, 2),
         "high_activation_count": int((df["activation_label"] == "High").sum()),
@@ -120,6 +123,35 @@ def generate_tier_breakdown(df: pd.DataFrame) -> dict:
     _save(data, "eda_tier_breakdown.json")
     return data
 
+def generate_budget_scatter(df: pd.DataFrame) -> dict:
+    sample = df.sample(min(1500, len(df)), random_state=42)
+    scatter = sample[["Budget", "Revenue_Generated", "ROI", "Subscription_Tier"]].copy()
+    scatter = scatter.rename(columns={"Revenue_Generated": "Revenue", "Subscription_Tier": "tier"})
+    scatter.columns = [c.lower() for c in scatter.columns]
+    data = scatter.to_dict(orient="records")
+    _save(data, "eda_budget_scatter.json")
+    return data
+
+def generate_discount_vs_units(df: pd.DataFrame) -> dict:
+    bins = [0, 10, 20, 30, 40, 50, 100]
+    labels = ["1-10%", "11-20%", "21-30%", "31-40%", "41-50%", "51%+"]
+    df_temp = df.copy()
+    df_temp["range"] = pd.cut(df_temp["Discount_Level"], bins=bins, labels=labels, right=True)
+    grouped = df_temp.groupby("range", observed=True).agg(
+        avg=("Units_Sold", "mean"),
+        std=("Units_Sold", "std"),
+        count=("Campaign_ID", "count")
+    ).fillna(0).round(2).reset_index()
+    data = grouped.to_dict(orient="records")
+    _save(data, "eda_discount_vs_units.json")
+    return data
+
+def generate_satisfaction_distribution(df: pd.DataFrame) -> dict:
+    counts = df["Customer_Satisfaction_Post_Refund"].value_counts().sort_index().to_dict()
+    data = [{"score": k, "count": v} for k, v in counts.items()]
+    _save(data, "eda_satisfaction_distribution.json")
+    return data
+
 def run(df: pd.DataFrame | None = None) -> dict:
     if df is None:
         if not FEATURES_PATH.exists():
@@ -136,6 +168,9 @@ def run(df: pd.DataFrame | None = None) -> dict:
         "vanity_vs_activation": generate_vanity_vs_activation(df),
         "keyword_performance": generate_keyword_performance(df),
         "tier_breakdown": generate_tier_breakdown(df),
+        "budget_scatter": generate_budget_scatter(df),
+        "discount_vs_units": generate_discount_vs_units(df),
+        "satisfaction_distribution": generate_satisfaction_distribution(df),
     }
     print("[eda] EDA complete.\n")
     return results
